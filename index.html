@@ -1,0 +1,613 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FlexStrong Bot — Live Рейтинг</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+        }
+
+        :root {
+            --bg: #0a0a0f;
+            --card: #12121a;
+            --border: #1e1e30;
+            --accent: #7c3aed;
+            --accent2: #a78bfa;
+            --gold: #f59e0b;
+            --text: #e2e8f0;
+            --text2: #94a3b8;
+            --green: #10b981;
+            --red: #ef4444;
+        }
+
+        body {
+            background: var(--bg);
+            color: var(--text);
+            min-height: 100vh;
+            background-image:
+                radial-gradient(circle at 20% 50%, rgba(124, 58, 237, 0.04) 0%, transparent 50%),
+                radial-gradient(circle at 80% 20%, rgba(245, 158, 11, 0.04) 0%, transparent 50%);
+        }
+
+        /* ===== КОНТЕЙНЕР ===== */
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        /* ===== ХЕДЕР ===== */
+        .header {
+            text-align: center;
+            padding: 40px 0 20px;
+        }
+
+        .header h1 {
+            font-size: 42px;
+            font-weight: 800;
+            background: linear-gradient(135deg, var(--accent2), var(--gold));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 8px;
+            letter-spacing: -1px;
+        }
+
+        .header .subtitle {
+            color: var(--text2);
+            font-size: 14px;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+        }
+
+        /* ===== СТАТУС-КАРТОЧКА ===== */
+        .status-card {
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            padding: 24px 30px;
+            margin: 20px 0;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 16px;
+            transition: all 0.3s ease;
+        }
+
+        .status-info {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+        }
+
+        .status-dot {
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            display: inline-block;
+            transition: all 0.3s ease;
+        }
+
+        .status-dot.online {
+            background: var(--green);
+            box-shadow: 0 0 16px var(--green);
+            animation: pulse 1.5s infinite;
+        }
+
+        .status-dot.offline {
+            background: var(--red);
+            box-shadow: 0 0 16px var(--red);
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.3; }
+        }
+
+        .status-text {
+            font-size: 20px;
+            font-weight: 700;
+        }
+
+        .online-text { color: var(--green); }
+        .offline-text { color: var(--red); }
+
+        /* Статистика */
+        .stats-row {
+            display: flex;
+            gap: 24px;
+            flex-wrap: wrap;
+        }
+
+        .stat-item {
+            text-align: center;
+        }
+
+        .stat-value {
+            font-size: 22px;
+            font-weight: 800;
+            background: linear-gradient(135deg, var(--accent2), var(--gold));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .stat-label {
+            font-size: 11px;
+            color: var(--text2);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .refresh-badge {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            color: var(--text2);
+            font-size: 13px;
+        }
+
+        .refresh-dot {
+            width: 8px;
+            height: 8px;
+            background: var(--green);
+            border-radius: 50%;
+            animation: pulse 1s infinite;
+        }
+
+        /* ===== ТАБЛИЦА ===== */
+        .table-wrapper {
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            overflow: hidden;
+        }
+
+        .table-header {
+            background: #0e0e16;
+            padding: 20px 24px;
+            border-bottom: 2px solid var(--border);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .table-header h2 {
+            font-size: 20px;
+            font-weight: 700;
+        }
+
+        .table-header .count {
+            color: var(--text2);
+            font-size: 14px;
+        }
+
+        /* Скролл для таблицы */
+        .table-scroll {
+            max-height: 70vh;
+            overflow-y: auto;
+        }
+
+        .table-scroll::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .table-scroll::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        .table-scroll::-webkit-scrollbar-thumb {
+            background: var(--border);
+            border-radius: 3px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        thead {
+            position: sticky;
+            top: 0;
+            z-index: 10;
+            background: #0e0e16;
+        }
+
+        th {
+            padding: 16px 20px;
+            text-align: left;
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            color: var(--text2);
+            border-bottom: 1px solid var(--border);
+        }
+
+        th:first-child { width: 70px; text-align: center; }
+        th:nth-child(2) { width: auto; }
+        th:nth-child(3) { width: 100px; text-align: center; }
+        th:nth-child(4) { width: 110px; text-align: right; }
+        th:last-child { width: 200px; }
+
+        td {
+            padding: 15px 20px;
+            border-bottom: 1px solid rgba(30, 30, 48, 0.5);
+            font-size: 15px;
+            transition: all 0.2s ease;
+        }
+
+        td:first-child { text-align: center; }
+        td:nth-child(3) { text-align: center; }
+        td:nth-child(4) { text-align: right; }
+
+        tbody tr {
+            transition: all 0.2s ease;
+        }
+
+        tbody tr:hover {
+            background: rgba(124, 58, 237, 0.05);
+        }
+
+        tbody tr:last-child td {
+            border-bottom: none;
+        }
+
+        /* Ранги */
+        .rank {
+            font-weight: 800;
+            font-size: 17px;
+        }
+
+        .rank-1 { color: #f59e0b; font-size: 22px; }
+        .rank-2 { color: #94a3b8; font-size: 20px; }
+        .rank-3 { color: #cd853f; font-size: 19px; }
+
+        /* Имя */
+        .user-name {
+            font-weight: 600;
+        }
+
+        .user-id {
+            color: var(--text2);
+            font-size: 11px;
+            margin-left: 6px;
+        }
+
+        .premium-badge {
+            display: inline-block;
+            background: linear-gradient(135deg, #f59e0b, #d97706);
+            color: #000;
+            font-size: 10px;
+            padding: 2px 8px;
+            border-radius: 20px;
+            margin-left: 6px;
+            font-weight: 700;
+            vertical-align: middle;
+        }
+
+        /* Алмазы */
+        .diamonds {
+            color: var(--accent2);
+            font-weight: 600;
+        }
+
+        /* Рейтинг */
+        .rating-value {
+            font-weight: 700;
+            font-size: 16px;
+            font-variant-numeric: tabular-nums;
+        }
+
+        /* Прогресс бар */
+        .bar-container {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .bar-bg {
+            flex: 1;
+            height: 7px;
+            background: var(--border);
+            border-radius: 4px;
+            overflow: hidden;
+        }
+
+        .bar-fill {
+            height: 100%;
+            border-radius: 4px;
+            background: linear-gradient(90deg, var(--accent), var(--accent2));
+            transition: width 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .bar-fill.top-1 { background: linear-gradient(90deg, #f59e0b, #fbbf24); }
+        .bar-fill.top-2 { background: linear-gradient(90deg, #94a3b8, #cbd5e1); }
+        .bar-fill.top-3 { background: linear-gradient(90deg, #cd853f, #d4a574); }
+
+        .bar-percent {
+            font-size: 12px;
+            color: var(--text2);
+            min-width: 45px;
+            text-align: right;
+            font-variant-numeric: tabular-nums;
+        }
+
+        /* ===== СОСТОЯНИЯ ЗАГРУЗКИ ===== */
+        .loading-state {
+            text-align: center;
+            padding: 60px;
+            color: var(--text2);
+        }
+
+        .spinner {
+            display: inline-block;
+            width: 32px;
+            height: 32px;
+            border: 3px solid var(--border);
+            border-top: 3px solid var(--accent);
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+            margin-bottom: 12px;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .error-state {
+            text-align: center;
+            padding: 60px;
+            color: var(--red);
+        }
+
+        /* ===== ФУТЕР ===== */
+        .footer {
+            text-align: center;
+            padding: 30px;
+            color: #475569;
+            font-size: 13px;
+        }
+
+        .footer a {
+            color: var(--accent2);
+            text-decoration: none;
+        }
+
+        .footer a:hover {
+            text-decoration: underline;
+        }
+
+        /* ===== МОБИЛЬНАЯ АДАПТАЦИЯ ===== */
+        @media (max-width: 768px) {
+            .header h1 { font-size: 28px; }
+            .status-card { padding: 16px 20px; }
+            th, td { padding: 10px 12px; font-size: 13px; }
+            th:last-child, td:last-child { display: none; }
+            .bar-container { display: none; }
+            .stats-row { gap: 12px; }
+            .stat-value { font-size: 18px; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+
+        <!-- ХЕДЕР -->
+        <div class="header">
+            <h1>🏆 FlexStrong Bot</h1>
+            <p class="subtitle">Live Рейтинг • ТОП-100</p>
+        </div>
+
+        <!-- СТАТУС -->
+        <div class="status-card">
+            <div class="status-info">
+                <span class="status-dot" id="statusDot"></span>
+                <span class="status-text" id="statusText">Проверка...</span>
+            </div>
+            <div class="stats-row">
+                <div class="stat-item">
+                    <div class="stat-value" id="totalUsers">—</div>
+                    <div class="stat-label">Пользователей</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-value" id="premiumUsers">—</div>
+                    <div class="stat-label">Premium</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-value" id="totalDiamonds">—</div>
+                    <div class="stat-label">Алмазов</div>
+                </div>
+            </div>
+            <div class="refresh-badge">
+                <span class="refresh-dot"></span>
+                Каждую секунду
+            </div>
+        </div>
+
+        <!-- ТАБЛИЦА -->
+        <div class="table-wrapper">
+            <div class="table-header">
+                <h2>📊 Рейтинг</h2>
+                <span class="count" id="topCount">ТОП-100</span>
+            </div>
+            <div class="table-scroll">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>#</th>
+                            <th>Пользователь</th>
+                            <th>💎</th>
+                            <th>Рейтинг</th>
+                            <th>Прогресс</th>
+                        </tr>
+                    </thead>
+                    <tbody id="topBody">
+                        <tr>
+                            <td colspan="5">
+                                <div class="loading-state">
+                                    <div class="spinner"></div>
+                                    <p>Загрузка рейтинга...</p>
+                                </div>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- ФУТЕР -->
+        <div class="footer">
+            <p>FlexStrong Bot © 2026 • <a href="https://t.me/FlexStrong_bot" target="_blank">@FlexStrong_bot</a></p>
+        </div>
+
+    </div>
+
+    <script>
+        // ============ КОНФИГУРАЦИЯ ============
+        const API_URL = 'http://localhost:8000/api';
+        
+        // ============ DOM ЭЛЕМЕНТЫ ============
+        const statusDot = document.getElementById('statusDot');
+        const statusText = document.getElementById('statusText');
+        const topBody = document.getElementById('topBody');
+        const topCount = document.getElementById('topCount');
+        const totalUsersEl = document.getElementById('totalUsers');
+        const premiumUsersEl = document.getElementById('premiumUsers');
+        const totalDiamondsEl = document.getElementById('totalDiamonds');
+
+        // ============ МЕДАЛИ ============
+        const medals = { 1: '🥇', 2: '🥈', 3: '🥉' };
+
+        // ============ ФОРМАТИРОВАНИЕ ЧИСЕЛ ============
+        function formatNumber(num) {
+            if (num >= 1000000) return (num / 1000000).toFixed(1) + 'M';
+            if (num >= 1000) return (num / 1000).toFixed(1) + 'K';
+            return num.toString();
+        }
+
+        // ============ API ЗАПРОСЫ ============
+        async function fetchStatus() {
+            try {
+                const res = await fetch(API_URL + '/status');
+                const data = await res.json();
+                
+                statusDot.className = 'status-dot online';
+                statusText.className = 'status-text online-text';
+                statusText.textContent = '🟢 Бот онлайн';
+                return true;
+            } catch (e) {
+                statusDot.className = 'status-dot offline';
+                statusText.className = 'status-text offline-text';
+                statusText.textContent = '🔴 Бот оффлайн';
+                return false;
+            }
+        }
+
+        async function fetchStats() {
+            try {
+                const res = await fetch(API_URL + '/stats');
+                const data = await res.json();
+                
+                totalUsersEl.textContent = formatNumber(data.total_users);
+                premiumUsersEl.textContent = formatNumber(data.premium_users);
+                totalDiamondsEl.textContent = formatNumber(data.total_diamonds);
+            } catch (e) {
+                totalUsersEl.textContent = '—';
+                premiumUsersEl.textContent = '—';
+                totalDiamondsEl.textContent = '—';
+            }
+        }
+
+        async function fetchTop() {
+            try {
+                const res = await fetch(API_URL + '/top');
+                const data = await res.json();
+                
+                topCount.textContent = `ТОП-${data.length}`;
+                
+                let html = '';
+                
+                data.forEach((user, i) => {
+                    const pos = i + 1;
+                    const medal = medals[pos] || pos + '.';
+                    
+                    // CSS классы для топа
+                    let rankClass = '';
+                    let barClass = '';
+                    if (pos === 1) { rankClass = ' rank-1'; barClass = ' top-1'; }
+                    else if (pos === 2) { rankClass = ' rank-2'; barClass = ' top-2'; }
+                    else if (pos === 3) { rankClass = ' rank-3'; barClass = ' top-3'; }
+                    
+                    const name = escapeHtml(user.name);
+                    const premiumBadge = user.is_premium ? ' <span class="premium-badge">👑 PREM</span>' : '';
+                    const userId = user.username ? `@${user.username}` : `ID:${user.user_id}`;
+                    
+                    html += `
+                        <tr>
+                            <td><span class="rank${rankClass}">${medal}</span></td>
+                            <td>
+                                <span class="user-name">${name}</span>${premiumBadge}
+                                <span class="user-id">${userId}</span>
+                            </td>
+                            <td><span class="diamonds">💎${user.diamonds}</span></td>
+                            <td><span class="rating-value">${user.rating.toLocaleString()}</span></td>
+                            <td>
+                                <div class="bar-container">
+                                    <div class="bar-bg">
+                                        <div class="bar-fill${barClass}" style="width:${user.percent}%"></div>
+                                    </div>
+                                    <span class="bar-percent">${user.percent}%</span>
+                                </div>
+                            </td>
+                        </tr>
+                    `;
+                });
+                
+                topBody.innerHTML = html;
+            } catch (e) {
+                topBody.innerHTML = `
+                    <tr>
+                        <td colspan="5">
+                            <div class="error-state">
+                                <p>❌ Ошибка загрузки рейтинга</p>
+                                <p style="font-size:13px;margin-top:8px;">Проверьте, что бот запущен</p>
+                            </div>
+                        </td>
+                    </tr>
+                `;
+            }
+        }
+
+        // ============ БЕЗОПАСНОСТЬ ============
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        // ============ ГЛАВНЫЙ ЦИКЛ ОБНОВЛЕНИЯ ============
+        async function refresh() {
+            await Promise.all([
+                fetchStatus(),
+                fetchStats(),
+                fetchTop()
+            ]);
+        }
+
+        // ============ ЗАПУСК ============
+        refresh();
+        setInterval(refresh, 1000);
+
+        console.log('🚀 FlexStrong Live Rating запущен');
+        console.log('📡 API:', API_URL);
+        console.log('🔄 Интервал обновления: 1 секунда');
+    </script>
+
+</body>
+</html>
